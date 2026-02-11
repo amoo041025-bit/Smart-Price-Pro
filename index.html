@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart-Price Pro | AI Strategic Pricing</title>
     <script>
-        // 전역 환경 변수 에러 방지용 심(Shim)
+        // 환경 변수 에러 방지용 전역 객체 설정
         window.process = { env: { API_KEY: "" } };
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,8 +16,8 @@
         .font-mono { font-family: 'JetBrains Mono', monospace; }
         input[type="range"] { -webkit-appearance: none; background: #e2e8f0; border-radius: 999px; height: 6px; }
         input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 20px; height: 20px; background: #4f46e5;
-            cursor: pointer; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            -webkit-appearance: none; width: 22px; height: 22px; background: #4f46e5;
+            cursor: pointer; border-radius: 50%; border: 4px solid white; box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4);
         }
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -26,12 +26,12 @@
     <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@19.0.0",
-    "react-dom": "https://esm.sh/react-dom@19.0.0",
-    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-    "@google/genai": "https://esm.sh/@google/genai@1.40.0",
-    "lucide-react": "https://esm.sh/lucide-react@0.460.0?external=react",
-    "recharts": "https://esm.sh/recharts@2.13.3?external=react,react-dom",
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "@google/genai": "https://esm.sh/@google/genai@0.21.0",
+    "lucide-react": "https://esm.sh/lucide-react@0.446.0",
+    "recharts": "https://esm.sh/recharts@2.12.7",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/",
     "vite": "https://esm.sh/vite@^7.3.1",
