@@ -4,10 +4,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Smart-Price Pro | AI 이커머스 가격 전략</title>
+    <title>Smart-Price Pro | AI 가격 전략 시스템</title>
+    
+    <!-- 필수 스크립트 로드 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+KR:wght@400;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
     <style>
       body { font-family: 'Inter', 'Noto Sans KR', sans-serif; background-color: #f8fafc; }
       .font-mono { font-family: 'JetBrains Mono', monospace; }
@@ -19,6 +22,7 @@
       .loader { border-top-color: #4f46e5; animation: spin 1s linear infinite; }
       @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
+
     <script type="importmap">
 {
   "imports": {
@@ -26,41 +30,265 @@
     "react-dom": "https://esm.sh/react-dom@19.0.0",
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
     "@google/genai": "https://esm.sh/@google/genai@1.40.0",
-    "lucide-react": "https://esm.sh/lucide-react@0.463.0?external=react",
-    "recharts": "https://esm.sh/recharts@2.15.0?external=react,react-dom",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "lucide-react": "https://esm.sh/lucide-react@0.460.0?external=react",
+    "recharts": "https://esm.sh/recharts@2.13.3?external=react,react-dom",
     "react/": "https://esm.sh/react@^19.2.4/",
     "vite": "https://esm.sh/vite@^7.3.1",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4"
   }
 }
 </script>
+    
     <script>
-      // API Key 및 기본 환경 설정
+      // 환경 변수 모킹
       window.process = { env: { API_KEY: "" } };
-      // 런타임 에러 캡처
-      window.onerror = function(msg, url, line) {
-        const root = document.getElementById('root');
-        if (root) {
-          root.innerHTML = `<div class="p-8 text-red-500 font-bold bg-red-50 rounded-xl m-4 border border-red-200">
-            <h3 class="text-xl mb-2">실행 오류 발생</h3>
-            <p class="text-sm opacity-80">${msg}</p>
-            <p class="text-xs mt-2 font-mono">Line: ${line}</p>
-            <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg text-sm">다시 시도</button>
-          </div>`;
+      
+      // 로딩 타임아웃 감지 (5초 이상 로딩 시 메시지 표시)
+      setTimeout(() => {
+        const loaderText = document.getElementById('loader-text');
+        if (loaderText && document.getElementById('root').innerHTML.includes('loader')) {
+          loaderText.innerHTML = `
+            <div class="text-center p-6 bg-white rounded-2xl shadow-xl border border-red-100 max-w-sm">
+              <p class="text-red-500 font-bold mb-2">초기화 시간이 너무 깁니다.</p>
+              <p class="text-xs text-slate-500 mb-4">인터넷 연결을 확인하거나 페이지를 새로고침 해주세요.</p>
+              <button onclick="location.reload()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold">새로고침</button>
+            </div>
+          `;
         }
-      };
+      }, 5000);
     </script>
   <link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root">
-      <div class="flex flex-col items-center justify-center min-h-screen gap-4">
-        <div class="loader w-12 h-12 border-4 border-slate-200 rounded-full"></div>
-        <p class="text-sm font-bold text-slate-400 animate-pulse tracking-widest uppercase">Smart Engine Initializing...</p>
+      <div id="loader-container" class="flex flex-col items-center justify-center min-h-screen gap-6 bg-slate-50">
+        <div class="loader w-14 h-14 border-4 border-slate-200 rounded-full"></div>
+        <div id="loader-text" class="flex flex-col items-center gap-2">
+          <p class="text-sm font-black text-slate-400 animate-pulse tracking-[0.3em] uppercase">Smart-Price Engine</p>
+          <p class="text-[10px] font-bold text-slate-300 uppercase tracking-widest">v5.0 Initializing...</p>
+        </div>
       </div>
     </div>
-    <script type="text/babel" data-type="module" src="./index.tsx"></script>
+
+    <!-- 인라인 React 애플리케이션 -->
+    <script type="text/babel" data-type="module">
+      import React, { useState, useEffect, useMemo, useRef } from 'react';
+      import { createRoot } from 'react-dom/client';
+      import { 
+        Calculator, BarChart3, Sparkles, Target, Settings2, ShieldCheck, 
+        TrendingUp, RefreshCcw, DollarSign, PieChart, ChevronRight 
+      } from 'lucide-react';
+      import { GoogleGenAI } from "@google/genai";
+      import { 
+        BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell 
+      } from 'recharts';
+
+      const formatCurrency = (v) => 
+        new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(Math.round(v));
+
+      const App = () => {
+        const [input, setInput] = useState({
+          productName: '프리미엄 전략 상품',
+          costPrice: 55000,
+          mainGpRate: 35.0,
+          wholesaleMargin: 15,
+          consumerMargin: 20
+        });
+
+        const [targetPrice, setTargetPrice] = useState('150000');
+        const [aiAnalysis, setAiAnalysis] = useState('');
+        const [isAnalyzing, setIsAnalyzing] = useState(false);
+        const isUpdatingFromTarget = useRef(false);
+
+        // 가격 계산 엔진
+        const result = useMemo(() => {
+          const { costPrice, mainGpRate, wholesaleMargin, consumerMargin } = input;
+          const mainSupplyNet = costPrice / (1 - (mainGpRate / 100));
+          const mainSupplyVatIncl = mainSupplyNet * 1.1;
+          const wholesalePrice = mainSupplyVatIncl / (1 - (wholesaleMargin / 100));
+          const consumerPrice = wholesalePrice / (1 - (consumerMargin / 100));
+          
+          return {
+            mainSupplyNet, mainSupplyVatIncl, wholesalePrice, consumerPrice,
+            totalMargin: consumerPrice - costPrice,
+            marginRate: ((consumerPrice - costPrice) / consumerPrice) * 100
+          };
+        }, [input]);
+
+        // 역산 가격 동기화
+        useEffect(() => {
+          if (!isUpdatingFromTarget.current) {
+            setTargetPrice(Math.round(result.consumerPrice).toString());
+          }
+        }, [result.consumerPrice]);
+
+        const handleInputChange = (e) => {
+          const { name, value } = e.target;
+          isUpdatingFromTarget.current = false;
+          setInput(prev => ({ ...prev, [name]: name === 'productName' ? value : Number(value) }));
+        };
+
+        const handleTargetPriceChange = (e) => {
+          const val = e.target.value;
+          setTargetPrice(val);
+          const num = Number(val);
+          if (!num || num <= 0) return;
+
+          isUpdatingFromTarget.current = true;
+          const wholesale = num * (1 - (input.consumerMargin / 100));
+          const supplyVat = wholesale * (1 - (input.wholesaleMargin / 100));
+          const supplyNet = supplyVat / 1.1;
+          const newGp = supplyNet > 0 ? (1 - (input.costPrice / supplyNet)) * 100 : 0;
+          setInput(prev => ({ ...prev, mainGpRate: parseFloat(newGp.toFixed(2)) }));
+        };
+
+        const handleAiAnalyze = async () => {
+          setIsAnalyzing(true);
+          try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
+            const prompt = `이커머스 가격 전략가로서 상품(${input.productName})의 원가 ${input.costPrice}원 대비 소비자가 ${Math.round(result.consumerPrice)}원(마진율 ${result.marginRate.toFixed(1)}%) 구조를 3문장으로 분석해줘.`;
+            const response = await ai.models.generateContent({
+              model: 'gemini-3-flash-preview',
+              contents: prompt,
+            });
+            setAiAnalysis(response.text);
+          } catch (e) {
+            setAiAnalysis("AI 분석 기능을 활성화하려면 유효한 API 키가 필요합니다.");
+          } finally {
+            setIsAnalyzing(false);
+          }
+        };
+
+        const chartData = [
+          { name: '원가', val: input.costPrice, color: '#94a3b8' },
+          { name: '공급가', val: result.mainSupplyVatIncl, color: '#818cf8' },
+          { name: '도매가', val: result.wholesalePrice, color: '#6366f1' },
+          { name: '소비자가', val: result.consumerPrice, color: '#10b981' }
+        ];
+
+        return (
+          <div className="min-h-screen flex flex-col bg-slate-50">
+            <header className="bg-slate-900 text-white px-6 py-4 sticky top-0 z-50 shadow-2xl border-b border-slate-800 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-900/40">
+                  <Calculator className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-black tracking-tighter uppercase leading-none">Smart-Price <span className="text-indigo-400">PRO</span></h1>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Simulation Engine v5.0</p>
+                </div>
+              </div>
+              <div className="bg-slate-800 px-4 py-1.5 rounded-full border border-slate-700 hidden sm:flex items-center gap-2">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Live Engine Ready</span>
+              </div>
+            </header>
+
+            <main className="flex-1 max-w-7xl mx-auto w-full p-6 lg:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <aside className="lg:col-span-4 space-y-6">
+                <div className="bg-white rounded-[32px] p-8 shadow-xl border border-slate-200">
+                  <h2 className="font-bold text-slate-800 text-sm mb-8 flex items-center gap-2 uppercase tracking-tight">
+                    <Settings2 className="w-4 h-4 text-indigo-600" /> 파라미터 제어판
+                  </h2>
+                  <div className="space-y-6">
+                    <div className="p-6 bg-indigo-600 rounded-3xl shadow-lg relative overflow-hidden group">
+                      <Target className="absolute -right-4 -bottom-4 w-24 h-24 text-white opacity-10" />
+                      <label className="text-[10px] font-black text-indigo-100 uppercase mb-2 block tracking-widest">목표 소비자 가격 (역산)</label>
+                      <div className="relative">
+                        <span className="absolute left-0 top-1 text-white opacity-50 font-bold text-2xl font-mono">₩</span>
+                        <input type="number" value={targetPrice} onChange={handleTargetPriceChange} className="w-full pl-8 bg-transparent border-b-2 border-indigo-400 text-white text-3xl font-black outline-none font-mono focus:border-white transition-colors"/>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">매입 원가 (VAT 별도)</label>
+                      <input type="number" name="costPrice" value={input.costPrice} onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl font-mono font-bold text-slate-700 outline-none focus:ring-4 focus:ring-indigo-500/10"/>
+                    </div>
+                    <div className="pt-6 border-t border-slate-100 space-y-6">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs font-bold text-slate-600 uppercase">주거래 마진 (GP %)</label>
+                          <span className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg text-xs font-black font-mono">{input.mainGpRate}%</span>
+                        </div>
+                        <input type="range" name="mainGpRate" min="-10" max="80" step="0.1" value={input.mainGpRate} onChange={handleInputChange} className="w-full"/>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase">도매 마진 (%)</label>
+                          <input type="number" name="wholesaleMargin" value={input.wholesaleMargin} onChange={handleInputChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold font-mono outline-none"/>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase">소비자 마진 (%)</label>
+                          <input type="number" name="consumerMargin" value={input.consumerMargin} onChange={handleInputChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold font-mono outline-none"/>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </aside>
+
+              <section className="lg:col-span-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-white p-7 rounded-[32px] border border-slate-200 shadow-sm">
+                    <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest block mb-1">권장 소비자가</span>
+                    <div className="text-3xl font-black text-emerald-600 font-mono tracking-tighter">{formatCurrency(result.consumerPrice)}</div>
+                  </div>
+                  <div className="bg-white p-7 rounded-[32px] border border-slate-200 shadow-sm">
+                    <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest block mb-1">총 마진액</span>
+                    <div className="text-3xl font-black text-indigo-600 font-mono tracking-tighter">{formatCurrency(result.totalMargin)}</div>
+                  </div>
+                  <div className="bg-white p-7 rounded-[32px] border border-slate-200 shadow-sm">
+                    <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest block mb-1">수익률 (GP)</span>
+                    <div className="text-3xl font-black text-slate-800 font-mono tracking-tighter">{result.marginRate.toFixed(1)}%</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm h-80 flex flex-col">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-indigo-500" /> 시각화 리포트</h3>
+                    <div className="flex-1 min-h-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                          <XAxis dataKey="name" tick={{fontSize: 10, fontWeight: 700}} axisLine={false} tickLine={false} />
+                          <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.1)'}} />
+                          <Bar dataKey="val" radius={[10, 10, 0, 0]} barSize={40}>
+                            {chartData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm h-80 flex flex-col">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /> AI 전략 인사이트</h3>
+                      <button onClick={handleAiAnalyze} disabled={isAnalyzing} className="text-[10px] font-black bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-black disabled:opacity-50">분석</button>
+                    </div>
+                    <div className="flex-1 bg-slate-50 rounded-2xl p-5 overflow-y-auto text-xs font-medium text-slate-600 leading-relaxed">
+                      {aiAnalysis || "데이터 분석을 시작하려면 버튼을 클릭하세요."}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden">
+                  <table className="w-full text-left">
+                    <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase border-b border-slate-100">
+                      <tr><th className="px-8 py-4">구분</th><th className="px-8 py-4 text-right">금액 (VAT 포함)</th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      <tr className="bg-indigo-50/20"><td className="px-8 py-5 font-bold text-indigo-900">주거래 공급가</td><td className="px-8 py-5 text-right font-mono font-black text-indigo-700 text-lg">{formatCurrency(result.mainSupplyVatIncl)}</td></tr>
+                      <tr><td className="px-8 py-5 text-slate-700 font-medium italic">도매 공급가 (직거래)</td><td className="px-8 py-5 text-right font-mono font-bold text-slate-700">{formatCurrency(result.wholesalePrice)}</td></tr>
+                      <tr className="bg-emerald-50/30"><td className="px-8 py-6 font-black text-emerald-900 text-xl">최종 소비자가</td><td className="px-8 py-6 text-right font-mono font-black text-emerald-600 text-3xl tracking-tighter">{formatCurrency(result.consumerPrice)}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </main>
+            <footer className="p-10 text-center text-[10px] font-black text-slate-400 tracking-[0.4em] uppercase">© 2025 Smart-Price Pro • Integrated Engine v5.0</footer>
+          </div>
+        );
+      };
+
+      createRoot(document.getElementById('root')).render(<App />);
+    </script>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
