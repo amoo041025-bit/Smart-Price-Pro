@@ -1,6 +1,6 @@
 
 {
-  "name": "Smart-Price Pro: Zero-Build v5",
-  "description": "빌드 없이 GitHub Pages에서 즉시 작동하는 전문가용 AI 가격 엔진",
+  "name": "Smart-Price Pro: Zero-Build",
+  "description": "No build process required, works instantly on GitHub Pages",
   "requestFramePermissions": []
 }
